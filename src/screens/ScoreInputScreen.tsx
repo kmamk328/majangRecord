@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { ScrollView, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import { StyleSheet } from 'react-native';
-import { GluestackUIProvider, Box, Text, Button, Modal, Select, Switch, HStack, Checkbox, VStack, AlertDialog, Spinner } from '@gluestack-ui/themed';
+import { TamaguiProvider, YStack, XStack, Stack, Text, Button, AlertDialog, Dialog, Select, Switch, Checkbox, ScrollView } from 'tamagui';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Feather';
 import { db } from '../../firebaseConfig';
 import { getFirestore, collection, addDoc, doc, updateDoc, getDoc, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -49,7 +50,7 @@ const ScoreInputScreen = () => {
   ]);
   const [availablePoints, setAvailablePoints] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const [filteredPoints, setFilteredPoints] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [DialogVisible, setDialogVisible] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [rounds, setRounds] = useState([]);
@@ -65,6 +66,8 @@ const ScoreInputScreen = () => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [previousRoundInfo, setPreviousRoundInfo] = useState('開局');
   const cancelRef = useRef(null);
+  const ref = React.useRef(null)
+  const [showDialog, setShowDialog] = useState(false)
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -216,7 +219,7 @@ const ScoreInputScreen = () => {
       }
 
       setIsAlertOpen(true);
-      
+
     } catch (error) {
       console.error("Error saving round data: ", error);
     }
@@ -241,7 +244,7 @@ const ScoreInputScreen = () => {
 
   const confirmRolesSelection = () => {
     setCurrentRound({ ...currentRound, roles: selectedRoles });
-    setModalVisible(false);
+    setDialogVisible(false);
   };
 
   const handleAlertClose = () => {
@@ -268,7 +271,7 @@ const ScoreInputScreen = () => {
     setSelectedRoles([]);
     setPreviousRoundInfo(fetchPreviousRoundInfo()); // 前のラウンド情報を更新
   };
-  
+
   const handleOyaChange = (value) => {
     setCurrentRound({ ...currentRound, isOya: value });
     updateFilteredPoints(selectedRoles, isTsumo, value);
@@ -325,162 +328,205 @@ const ScoreInputScreen = () => {
   };
 
   return (
-    <ScrollView flex={1}>
-      <Box flex={1} justifyContent="center" padding={4}>
-      <Text>{previousRoundInfo}</Text>
-        <Text>局ごとの成績を入力してください:</Text>
-        <VStack space={4}>
-          <HStack space={4}>
-            <Box width="20%">
+      <TamaguiProvider>
+        <ScrollView h="$80" w="$80">
+          <Text>{previousRoundInfo}</Text>
+            <Text>局ごとの成績を入力してください:</Text>
+            <YStack >
+              <XStack >
+                  <Select
+                    selectedValue={currentRound.roundNumber.place}
+                    onValueChange={(itemValue) => handleRoundNumberChange('place', itemValue)}
+                    placeholder="場所"
+                  >
+                    {['東', '南', '西', '北'].map((place) => (
+                      <Select.Item key={place} label={place} value={place} />
+                    ))}
+                  </Select>
+                <Text> 場 </Text>
+                  <Select
+                    selectedValue={currentRound.roundNumber.round}
+                    onValueChange={(itemValue) => handleRoundNumberChange('round', itemValue)}
+                    placeholder="局"
+                  >
+                    {[1, 2, 3, 4].map((round) => (
+                      <Select.Item key={round} label={round.toString()} value={round.toString()} />
+                    ))}
+                  </Select>
+                <Text> 局 </Text>
+                  <Select
+                    selectedValue={currentRound.roundNumber.honba}
+                    onValueChange={(itemValue) => handleRoundNumberChange('honba', itemValue)}
+                    placeholder="本場"
+                  >
+                    {Array.from({ length: 11 }, (_, i) => i).map((honba) => (
+                      <Select.Item key={honba} label={honba.toString()} value={honba.toString()} />
+                    ))}
+                  </Select>
+                <Text> 本場 </Text>
+              </XStack>
+              <XStack >
+                  <Select
+                    selectedValue={currentRound.winner}
+                    onValueChange={(itemValue) => handleChange('winner', itemValue)}
+                    placeholder="あがった人"
+                  >
+                    {members.map((member) => (
+                      <Select.Item key={member.id} label={member.name} value={member.id} />
+                    ))}
+                  </Select>
+                <Checkbox
+                  value="isOya"
+                  isChecked={currentRound.isOya}
+                  onChange={(value) => handleOyaChange(value)}
+                  aria-label="親"
+                >
+                  <Text>親</Text>
+                </Checkbox>
+              </XStack>
+              <XStack >
+                <Text>ツモ:</Text>
+                <Switch isChecked={isTsumo} onToggle={handleTsumoToggle} />
+                <Text>鳴き:</Text>
+                <Switch isChecked={isNaki} onToggle={handleNakiToggle} />
+                <Text>リーチ:</Text>
+                <Switch isChecked={isReach} onToggle={handleReachToggle} />
+              </XStack>
               <Select
-                selectedValue={currentRound.roundNumber.place}
-                onValueChange={(itemValue) => handleRoundNumberChange('place', itemValue)}
-                placeholder="場所"
+                selectedValue={currentRound.winnerPoints}
+                onValueChange={(itemValue) => handleChange('winnerPoints', itemValue)}
+                placeholder="あがり点"
               >
-                {['東', '南', '西', '北'].map((place) => (
-                  <Select.Item key={place} label={place} value={place} />
+                {availablePoints.map((point, index) => (
+                  <Select.Item key={index} label={point.toString()} value={point.toString()} />
                 ))}
               </Select>
-            </Box>
-            <Text> 場 </Text>
-            <Box width="20%">
-              <Select
-                selectedValue={currentRound.roundNumber.round}
-                onValueChange={(itemValue) => handleRoundNumberChange('round', itemValue)}
-                placeholder="局"
-              >
-                {[1, 2, 3, 4].map((round) => (
-                  <Select.Item key={round} label={round.toString()} value={round.toString()} />
+              <Text>あがった役:</Text>
+              <ScrollView horizontal={true} style={{ marginVertical: 10 }}>
+                {selectedRoles.map((role, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    margin={1}
+                  >
+                    <Text>{role}</Text>
+                  </Button>
                 ))}
-              </Select>
-            </Box>
-            <Text> 局 </Text>
-            <Box width="20%">
-              <Select
-                selectedValue={currentRound.roundNumber.honba}
-                onValueChange={(itemValue) => handleRoundNumberChange('honba', itemValue)}
-                placeholder="本場"
-              >
-                {Array.from({ length: 11 }, (_, i) => i).map((honba) => (
-                  <Select.Item key={honba} label={honba.toString()} value={honba.toString()} />
-                ))}
-              </Select>
-            </Box>
-            <Text> 本場 </Text>
-          </HStack>
-          <HStack space={4} alignItems="center">
-            <Box width="80%">
-              <Select
-                selectedValue={currentRound.winner}
-                onValueChange={(itemValue) => handleChange('winner', itemValue)}
-                placeholder="あがった人"
-              >
-                {members.map((member) => (
-                  <Select.Item key={member.id} label={member.name} value={member.id} />
-                ))}
-              </Select>
-            </Box>
-            <Checkbox
-              value="isOya"
-              isChecked={currentRound.isOya}
-              onChange={(value) => handleOyaChange(value)}
-            >
-              親
-            </Checkbox>
-          </HStack>
-          <HStack space={4} alignItems="center">
-            <Text>ツモ:</Text>
-            <Switch isChecked={isTsumo} onToggle={handleTsumoToggle} />
-            <Text>鳴き:</Text>
-            <Switch isChecked={isNaki} onToggle={handleNakiToggle} />
-            <Text>リーチ:</Text>
-            <Switch isChecked={isReach} onToggle={handleReachToggle} />
-          </HStack>
-          <Select
-            selectedValue={currentRound.winnerPoints}
-            onValueChange={(itemValue) => handleChange('winnerPoints', itemValue)}
-            placeholder="あがり点"
-          >
-            {availablePoints.map((point, index) => (
-              <Select.Item key={index} label={point.toString()} value={point.toString()} />
-            ))}
-          </Select>
-          <Text>あがった役:</Text>
-          <ScrollView horizontal={true} style={{ marginVertical: 10 }}>
-            {selectedRoles.map((role, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                margin={1}
-              >
-                {role}
-              </Button>
-            ))}
-          </ScrollView>
-          <Button onPress={() => setModalVisible(true)}>あがった役を選択</Button>
-          <Modal isOpen={modalVisible} onClose={() => setModalVisible(false)}>
-            <Modal.Content maxWidth="400px">
-              <Modal.CloseButton />
-              <Modal.Header>あがった役を選択</Modal.Header>
-              <Modal.Body>
-                <ScrollView>
-                  {rolesOptions.map((roleObj, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedRoles.includes(roleObj.role) ? "solid" : "outline"}
-                      margin={1}
-                      onPress={() => toggleRoleSelection(roleObj.role)}
-                    >
-                      {roleObj.role}
-                    </Button>
-                  ))}
-                </ScrollView>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button onPress={confirmRolesSelection}>OK</Button>
-              </Modal.Footer>
-            </Modal.Content>
-          </Modal>
-          {!isTsumo && (
-            <VStack space={4}>
-              <Select
-                selectedValue={currentRound.discarder}
-                onValueChange={(itemValue) => handleChange('discarder', itemValue)}
-                placeholder="放銃した人"
-              >
-                {members.map((member) => (
-                  <Select.Item key={member.id} label={member.name} value={member.id} />
-                ))}
-              </Select>
-            </VStack>
-          )}
-          <HStack space={4} alignItems="center">
-            <Box width="30%">
-              <Button onPress={handlePrevious}>前へ</Button>
-            </Box>
-            <Box width="30%">
-              <Button onPress={handleFinish}>終了</Button>
-            </Box>
-            <Box width="30%">
-              <Button onPress={handleNext}>次へ</Button>
-            </Box>
-          </HStack>
-        </VStack>
-      </Box>
-      <AlertDialog leastDestructiveRef={cancelRef} isOpen={isAlertOpen} onClose={handleAlertClose}>
-        <AlertDialog.Content>
-          <AlertDialog.Header>保存成功</AlertDialog.Header>
-          <AlertDialog.Body>データが保存されました。</AlertDialog.Body>
-          <AlertDialog.Footer>
-            <Button onPress={handleAlertClose}>OK</Button>
-          </AlertDialog.Footer>
-        </AlertDialog.Content>
-      </AlertDialog>
-    </ScrollView>
+              </ScrollView>
+                <Button onPress={() => setDialogVisible(true)} ref={ref}>
+                  <Text>あがった役を選択</Text>
+                </Button>
+                <Dialog isOpen={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+                  <Stack>
+                    <XStack justifyContent="space-between" alignItems="center">
+                      <Text fontSize="$md">あがった役を選択</Text>
+                      <Button onPress={() => setDialogVisible(false)}>
+                        <Icon name="close" size={20} />
+                      </Button>
+                    </XStack>
+                    <YStack space>
+                      <ScrollView>
+                        {rolesOptions.map((roleObj, index) => (
+                          <Button
+                            key={index}
+                            variant={selectedRoles.includes(roleObj.role) ? "solid" : "outline"}
+                            margin={1}
+                            onPress={() => toggleRoleSelection(roleObj.role)}
+                          >
+                            <Text>{roleObj.role}</Text>
+                          </Button>
+                        ))}
+                      </ScrollView>
+                    </YStack>
+                    <XStack justifyContent="flex-end" space>
+                      <Button onPress={() => setDialogVisible(false)}>
+                        <Text>Cancel</Text>
+                      </Button>
+                      <Button onPress={confirmRolesSelection}>
+                        <Text>OK</Text>
+                      </Button>
+                    </XStack>
+                  </Stack>
+                </Dialog>                        {/* <Button onPress={() => setDialogVisible(true)}><Text>あがった役を選択</Text></Button>
+              <Dialog isOpen={DialogVisible} onClose={() => setDialogVisible(false)}>
+                <Dialog.Content maxWidth="$2.5">
+                  <Dialog.CloseButton />
+                  <Dialog.Header><Text>あがった役を選択</Text></Dialog.Header>
+                  <Dialog.Body>
+                    <ScrollView>
+                      {rolesOptions.map((roleObj, index) => (
+                        <Button
+                          key={index}
+                          variant={selectedRoles.includes(roleObj.role) ? "solid" : "outline"}
+                          margin={1}
+                          onPress={() => toggleRoleSelection(roleObj.role)}
+                        >
+                          <Text> {roleObj.role}</Text>
+                        </Button>
+                      ))}
+                    </ScrollView>
+                  </Dialog.Body>
+                  <Dialog.Footer>
+                    <Button onPress={confirmRolesSelection}><Text>OK</Text></Button>
+                  </Dialog.Footer>
+                </Dialog.Content>
+              </Dialog> */}
+              {!isTsumo && (
+                <YStack >
+                  <Select
+                    selectedValue={currentRound.discarder}
+                    onValueChange={(itemValue) => handleChange('discarder', itemValue)}
+                    placeholder="放銃した人"
+                  >
+                    {members.map((member) => (
+                      <Select.Item key={member.id} label={member.name} value={member.id} />
+                    ))}
+                  </Select>
+                </YStack>
+              )}
+              <XStack space="md" alignItems="center">
+                  <Button onPress={handlePrevious}><Text>前へ</Text></Button>
+                  <Button onPress={handleFinish}><Text>終了</Text></Button>
+                  <Button onPress={handleNext}><Text>次へ</Text></Button>
+              </XStack>
+            </YStack>
+          {/* <AlertDialog leastDestructiveRef={cancelRef} isOpen={isAlertOpen} onClose={handleAlertClose}>
+            <AlertDialog.Content>
+              <AlertDialog.Header><Text>保存成功</Text></AlertDialog.Header>
+              <AlertDialog.Body><Text>データが保存されました。</Text></AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button onPress={handleAlertClose}><Text>OK</Text></Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Content>
+          </AlertDialog> */}
+          {/* <AlertDialog leastDestructiveRef={cancelRef} isOpen={isAlertOpen} onClose={handleAlertClose}>
+            <AlertDialog.Content>
+              <AlertDialog.CloseButton />
+              <AlertDialog.Header>保存成功</AlertDialog.Header>
+              <AlertDialog.Body>データが保存されました。</AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button.Group space={2}>
+                  <Button variant="ghost" colorScheme="coolGray" onPress={handleAlertClose}>
+                    キャンセル
+                  </Button>
+                  <Button onPress={handleAlertClose}>
+                    OK
+                  </Button>
+                </Button.Group>
+              </AlertDialog.Footer>
+            </AlertDialog.Content>
+          </AlertDialog> */}
+        </ScrollView>
+    </TamaguiProvider>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+  },
   input: {
     height: 40,
     borderColor: 'gray',
@@ -489,5 +535,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
 });
+
+const customTheme = {
+  colors: {
+    primary: '#6200ee',
+    background: '#f5f5f5',
+    surface: '#ffffff',
+    accent: '#03dac4',
+    error: '#b00020',
+    text: '#000000',
+    onBackground: '#000000',
+    onSurface: '#000000',
+    disabled: '#f5f5f5',
+    placeholder: '#9e9e9e',
+    backdrop: '#6200ee',
+  },
+};
 
 export default ScoreInputScreen;
