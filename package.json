@@ -19,10 +19,13 @@
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/stack": "^6.3.29",
+    "@tamagui/alert-dialog": "^1.101.0",
     "@tamagui/config": "^1.100.5",
     "@tamagui/core": "^1.100.5",
+    "@tamagui/portal": "^1.101.0",
     "date-fns": "^3.6.0",
     "expo": "^51.0.8",
+    "expo-font": "~12.0.7",
     "expo-status-bar": "~1.11.1",
     "firebase": "^10.12.2",
     "gluestack": "^0.1.1",
@@ -35,12 +38,15 @@
     "react-native-svg": "14.1.0",
     "react-native-vector-icons": "^10.1.0",
     "react-native-web": "~0.19.6",
+    "regenerator-runtime": "^0.14.1",
     "tamagui": "^1.100.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@expo/webpack-config": "~19.0.1",
+    "@tamagui/babel-plugin": "^1.101.0",
     "@types/react": "~18.2.45",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.4",
     "typescript": "^5.1.3"
   },
   "private": true

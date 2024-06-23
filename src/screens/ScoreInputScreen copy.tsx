@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getFirestore, collection, addDoc, doc, updateDoc, getDoc, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { View, Text, Button, Select, Switch, Checkbox, XStack, YStack, Sheet, ScrollView, styled, PortalProvider, Dialog, DialogContent, DialogTitle, DialogDescription} from 'tamagui';
+import { View, Text, Button, Select, Switch, Checkbox, XStack, YStack, Sheet, ScrollView, styled, PortalProvider, Dialog, DialogContent, DialogTitle, DialogDescription, DialogActions } from 'tamagui';
 
 const StyledScrollView = styled(ScrollView, {
   flex: 1,
@@ -218,6 +218,7 @@ const ScoreInputScreen = () => {
       }
 
       setIsDialogOpen(true);
+      
     } catch (error) {
       console.error("Error saving round data: ", error);
     }
@@ -373,6 +374,29 @@ const ScoreInputScreen = () => {
               ))}
             </ScrollView>
             <StyledButton onPress={() => setModalVisible(true)}>あがった役を選択</StyledButton>
+            <Sheet modal open={modalVisible} onOpenChange={setModalVisible}>
+              <Sheet.Overlay />
+              <Sheet.Frame>
+                <Sheet.Handle />
+                <Sheet.Header>
+                  <Text>あがった役を選択</Text>
+                </Sheet.Header>
+                <Sheet.ScrollView>
+                  {rolesOptions.map((roleObj, index) => (
+                    <StyledButton
+                      key={index}
+                      variant={selectedRoles.includes(roleObj.role) ? "solid" : "outline"}
+                      onPress={() => toggleRoleSelection(roleObj.role)}
+                    >
+                      {roleObj.role}
+                    </StyledButton>
+                  ))}
+                </Sheet.ScrollView>
+                <Sheet.Footer>
+                  <StyledButton onPress={confirmRolesSelection}>OK</StyledButton>
+                </Sheet.Footer>
+              </Sheet.Frame>
+            </Sheet>
             {!isTsumo && (
               <Select
                 value={currentRound.discarder}
@@ -392,7 +416,17 @@ const ScoreInputScreen = () => {
             </XStack>
           </YStack>
         </StyledView>
-
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog.Content>
+            <Dialog.Title>保存成功</Dialog.Title>
+            <Dialog.Description>
+              データが保存されました。
+            </Dialog.Description>
+            <Dialog.Actions>
+              <StyledButton onPress={handleDialogClose}>OK</StyledButton>
+            </Dialog.Actions>
+          </Dialog.Content>
+        </Dialog>
       </StyledScrollView>
     </PortalProvider>
   );
